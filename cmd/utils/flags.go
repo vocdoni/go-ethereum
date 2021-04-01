@@ -405,6 +405,11 @@ var (
 		Usage: "Percentage of cache memory allowance to use for snapshot caching (default = 10% full mode, 20% archive mode)",
 		Value: 10,
 	}
+	LowestArchiveBlock = cli.Int64Flag{
+		Name:  "cache.lowestarchiveblock",
+		Usage: "Block to start saving as archive (default = 0, archive mode)",
+		Value: 0,
+	}
 	CacheNoPrefetchFlag = cli.BoolFlag{
 		Name:  "cache.noprefetch",
 		Usage: "Disable heuristic state prefetch during block import (less CPU and disk IO, more time waiting for data)",
@@ -1499,6 +1504,9 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 	}
 	if ctx.GlobalIsSet(TxLookupLimitFlag.Name) {
 		cfg.TxLookupLimit = ctx.GlobalUint64(TxLookupLimitFlag.Name)
+	}
+	if ctx.GlobalIsSet(LowestArchiveBlock.Name) {
+		cfg.LowestArchiveBlock = ctx.GlobalInt64(LowestArchiveBlock.Name)
 	}
 	if ctx.GlobalIsSet(CacheFlag.Name) || ctx.GlobalIsSet(CacheTrieFlag.Name) {
 		cfg.TrieCleanCache = ctx.GlobalInt(CacheFlag.Name) * ctx.GlobalInt(CacheTrieFlag.Name) / 100

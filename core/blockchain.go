@@ -130,17 +130,19 @@ type CacheConfig struct {
 	SnapshotLimit       int           // Memory allowance (MB) to use for caching snapshot entries in memory
 	Preimages           bool          // Whether to store preimage of trie key to the disk
 
-	SnapshotWait bool // Wait for snapshot construction on startup. TODO(karalabe): This is a dirty hack for testing, nuke it
+	SnapshotWait       bool  // Wait for snapshot construction on startup. TODO(karalabe): This is a dirty hack for testing, nuke it
+	LowestArchiveBlock int64 // Minimum block to start as archive node
 }
 
 // defaultCacheConfig are the default caching values if none are specified by the
 // user (also used during testing).
 var defaultCacheConfig = &CacheConfig{
-	TrieCleanLimit: 256,
-	TrieDirtyLimit: 256,
-	TrieTimeLimit:  5 * time.Minute,
-	SnapshotLimit:  256,
-	SnapshotWait:   true,
+	TrieCleanLimit:     256,
+	TrieDirtyLimit:     256,
+	TrieTimeLimit:      5 * time.Minute,
+	SnapshotLimit:      256,
+	SnapshotWait:       true,
+	LowestArchiveBlock: 0,
 }
 
 // BlockChain represents the canonical chain given a database with a genesis
@@ -1534,7 +1536,9 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	triedb := bc.stateCache.TrieDB()
 
 	// If we're running an archive node, always flush
-	if bc.cacheConfig.TrieDirtyDisabled {
+	// Added condition to enable LowestArchiveBlock
+	if bc.cacheConfig.TrieDirtyDisabled && block.Number().Cmp(big.NewInt(bc.cacheConfig.LowestArchiveBlock)) >= 0 {
+		log.Info("## LAB ## Committing block: ", block.Number())
 		if err := triedb.Commit(root, false, nil); err != nil {
 			return NonStatTy, err
 		}
@@ -2321,7 +2325,7 @@ func (bc *BlockChain) maintainTxIndex(ancients uint64) {
 	// need to reindex all necessary transactions before starting to process any
 	// pruning requests.
 	if ancients > 0 {
-		var from = uint64(0)
+		from := uint64(0)
 		if bc.txLookupLimit != 0 && ancients > bc.txLookupLimit {
 			from = ancients - bc.txLookupLimit
 		}

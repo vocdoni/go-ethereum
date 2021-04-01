@@ -161,6 +161,7 @@ type Config struct {
 	TrieTimeout             time.Duration
 	SnapshotCache           int
 	Preimages               bool
+	LowestArchiveBlock      int64
 
 	// Mining options
 	Miner miner.Config
